@@ -10,10 +10,10 @@ const colorPrinters = [
     'http://172.18.15.131/'
 ];
 
-var colorPrinterLocations = [];
-var colorPrinterStatus = [];
-var colorPrinterLinks = [];
-var colorErrorList = [];
+let colorPrinterLocations = [];
+let colorPrinterStatus = [];
+let colorPrinterLinks = [];
+let colorErrorList = [];
 
 function getColorPrinters() {
     colorPrinterLocations = [];
@@ -23,30 +23,26 @@ function getColorPrinters() {
     colorPrinters.forEach((printer) => {
         let printerLocation = 'Nothing';
         let printerError = '';
+        
         // Request printer location
         request(`${printer}`, (error, response, html) => {
             if (!error && response.statusCode == 200) {
                 let containsError = false;
                 const $ = cheerio.load(html);
                 printerLocation = $('.printerlocation').text().replace(/\s\s+/g, '').replace('Location: ', '');
-                // request happens async, so need console.log inside
 
                 // Request Status Lines
                 request(`${printer}webglue/isw/status`, (error, response, html) => {
                     if (!error && response.statusCode == 200) {
                         let statusLine = '';
                         const data = JSON.parse(response.body);
-                        // printerError = data[0].IrTitle; // TODO: What if there's more than one error?? 'type': 'warning' for error printers
-                        //console.log(printerLocation);
                         data.forEach((line) => {
                             statusLine = statusLine + '<li>' + line.IrTitle + '</li>';
                             if (line.type == "warning" || line.type == "ir") {
                                 containsError = true;
                             }
                         })
-                        //console.log(statusLine);
-                        //console.log(containsError ? "Red" : "Green");
-                        //console.log();
+                        
                         colorPrinterLocations.push(printerLocation);
                         colorPrinterStatus.push(statusLine);
                         colorPrinterLinks.push(printer);
@@ -74,10 +70,10 @@ const bwPrinters = [
     'http://172.18.15.134/'
 ];
 
-var bwPrinterLocations = [];
-var bwPrinterStatus = [];
-var bwPrinterLinks = [];
-var bwErrorList = [];
+let bwPrinterLocations = [];
+let bwPrinterStatus = [];
+let bwPrinterLinks = [];
+let bwErrorList = [];
 
 function getBwPrinters() {
     bwPrinterLocations = [];
@@ -95,7 +91,6 @@ function getBwPrinters() {
                 let containsError = false;
                 const $ = cheerio.load(html);
                 printerLocation = $('b').last().text().replace(/\s\s+/g, '').replace('Location: ', '');
-                // console.log(printerLocation);
 
                 request(`${printer}cgi-bin/dynamic/printer/PrinterStatus.html`, (error, response, html) => {
                     if (!error && response.statusCode == 200) {
@@ -111,9 +106,6 @@ function getBwPrinters() {
                                 statusLine = statusLine + '<li>' + currentLine + '</li>';
                             }
                         })
-                        // console.log(containsError ? "Red" : "Green");
-                        // console.log(printerLocation);
-                        // console.log(statusLine);
 
                         bwPrinterLocations.push(printerLocation);
                         bwPrinterStatus.push(statusLine);
@@ -123,6 +115,7 @@ function getBwPrinters() {
                 })
             }
         })
+        
         // NOTE: Error message for Change tray 1 to recycled executive is bgcolor = #FF3333
         // NOTE: Error for tray empty is bgcolor = #FFFF66 (yellow)
     });
@@ -143,14 +136,13 @@ setInterval(function() {
 }, 30000);
 
 app.get('/', async function(req, res, next) { 
-    console.log("Get Request");
     fs.readFile(path.join(__dirname, 'public\\index.html'), 'utf8', function (err,data) {
         if (err) {
             console.log(err);
             return console.log(err);
         }
-        var $ = cheerio.load(data);
-        for (var i = 0; i < colorPrinters.length; i++) {
+        let $ = cheerio.load(data);
+        for (let i = 0; i < colorPrinters.length; i++) {
             $('#color-container').append(`
             <a class="link" href="${colorPrinterLinks[i]}" target="_blank">
                 <div class="printer-container ${colorErrorList[i] ? 'printer-error': 'printer-success'}">
@@ -163,7 +155,7 @@ app.get('/', async function(req, res, next) {
     `       )
         }
 
-        for (var i = 0; i < bwPrinters.length; i++) {
+        for (let i = 0; i < bwPrinters.length; i++) {
             $('#bw-container').append(`
             <a class="link" href="${bwPrinterLinks[i]}" target="_blank">
                 <div class="printer-container ${bwErrorList[i] ? 'printer-error': 'printer-success'}">
@@ -179,6 +171,6 @@ app.get('/', async function(req, res, next) {
         console.log("Request Complete");
     });
 });
-app.use(express.static(path.join(__dirname, 'public')));
 
+app.use(express.static(path.join(__dirname, 'public')));
 app.listen(8080, () => console.log("Server up!"));
